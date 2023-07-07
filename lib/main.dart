@@ -1,10 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'memo_service.dart';
 
-void main() {
+// void main() {
+late SharedPreferences prefs;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  prefs = await SharedPreferences.getInstance();
   runApp(
     MultiProvider(
       providers: [
@@ -113,6 +119,16 @@ class _HomePageState extends State<HomePage> {
             //     ),
             //   ),
             // );
+            // 위 코를 클래스 함수를 이용해 수정
+            memoService.createMemo(content: '');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => DetailPage(
+                  index: memoService.memoList.length - 1,
+                ),
+              ),
+            );
           },
         ),
       );
@@ -145,36 +161,7 @@ class DetailPage extends StatelessWidget {
           IconButton(
             onPressed: () {
               // 삭제 버튼 클릭시 =>
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: Text("정말로 삭제하시겠습니까?"),
-                    // 텍스트 아래 나올 버튼들
-                    actions: [
-                      // 취소 버튼
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: Text("취소"),
-                      ),
-                      // 확인 버튼
-                      TextButton(
-                        onPressed: () {
-                          // memoList.removeAt(index); // 해당 index에 해당하는 항목 삭제
-                          Navigator.pop(context); // 팝업 닫기
-                          Navigator.pop(context); // HomePage로 가기
-                        },
-                        child: Text(
-                          "확인",
-                          style: TextStyle(color: Colors.pink),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              );
+              showDeleteDialog(context, memoService);
             },
             icon: Icon(Icons.delete),
           )
@@ -195,9 +182,45 @@ class DetailPage extends StatelessWidget {
           onChanged: (value) {
             // 텍스트필드 안의 값이 변할 때 => 이 경우 아래 코드로 수정된 텍스트로 원래의 변수 값에 저장해주면 됨. / 근데 변수에서는 바뀌는데 HomePage UI에서는 바뀌지 않음 / 근데 만약에 여기서도 SetState를 쓰려고 한다면? x why?_) 두 개의 화면이 다르기 때문
             // memoList[index] = value;
+            memoService.updateMemo(
+                index: index, content: value); // 바로 윗 줄 코드를 이렇게 바꿈
           },
         ),
       ),
+    );
+  }
+
+  void showDeleteDialog(BuildContext context, MemoService memoService) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("정말로 삭제하시겠습니까?"),
+          // 텍스트 아래 나올 버튼들
+          actions: [
+            // 취소 버튼
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text("취소"),
+            ),
+            // 확인 버튼
+            TextButton(
+              onPressed: () {
+                // memoList.removeAt(index); // 해당 index에 해당하는 항목 삭제
+                memoService.deleteMemo(index: index); // 바로 윗 줄 코드를 이렇게 수정
+                Navigator.pop(context); // 팝업 닫기
+                Navigator.pop(context); // HomePage로 가기
+              },
+              child: Text(
+                "확인",
+                style: TextStyle(color: Colors.pink),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
